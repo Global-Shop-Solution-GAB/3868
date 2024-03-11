@@ -1,0 +1,220 @@
+Program.Sub.ScreenSU.Start
+gui.F_WO..create
+gui.F_WO..caption("Work Orders For Order Number")
+gui.F_WO..size(9840,5430)
+gui.F_WO..minx(0)
+gui.F_WO..miny(0)
+gui.F_WO..position(0,0)
+gui.F_WO..event(unload,F_WO_Unload)
+gui.F_WO..alwaysontop(False)
+gui.F_WO..fontname("Arial")
+gui.F_WO..fontsize(7)
+gui.F_WO..forecolor(0)
+gui.F_WO..fontstyle(,,,,)
+gui.F_WO..BackColor(-2147483633)
+gui.F_WO..controlbox(True)
+gui.F_WO..maxbutton(False)
+gui.F_WO..minbutton(False)
+gui.F_WO..mousepointer(1)
+gui.F_WO..moveable(True)
+gui.F_WO..sizeable(False)
+gui.F_WO..ShowInTaskBar(False)
+gui.F_WO..titlebar(True)
+gui.F_WO.gsfgWO.create(gsflexgrid)
+gui.F_WO.gsfgWO.FixedRows(0)
+gui.F_WO.gsfgWO.FixedCols(0)
+gui.F_WO.gsfgWO.visible(True)
+gui.F_WO.gsfgWO.size(9445,4690)
+gui.F_WO.gsfgWO.zorder(0)
+gui.F_WO.gsfgWO.position(70,70)
+gui.F_WO.gsfgWO.enabled(True)
+gui.F_WO.gsfgWO.event(commandclick,gsfgWO_CommandClick)
+
+
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Coded By BCC for Fortis Engineering and Manufacturing Inc.
+'9/15/2015
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sTitle.Declare(String)
+
+'Opening Detail Billing Header From CRM.NET Script 1
+F.Intrinsic.Control.If(V.Caller.Hook,=,42918)
+	F.Global.General.CallWrapperAsync(50,"ORD210/E/O")
+'Update Script 1 Button For CRM
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,42900)
+	V.Passed.CRM-cmdGAB-0.Set("Detail Billing")
+'Update Script 1 Button For Detail Billing
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,40110)
+	V.Passed.000115.Set("Work Orders")
+'Show WO associated with Selected Sales Order From Detail Billing Header Script 1, blank Sales Order number returns 0
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,40150)
+	F.Intrinsic.Control.If(V.Passed.000003,<>,"0")
+		F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+		F.Intrinsic.Control.CallSub(Buildstyle)
+		F.Intrinsic.Control.CallSub(Loadgrid)
+		F.Intrinsic.String.Build("Work Orders For Order Number {0}",V.Passed.000003,V.Local.sTitle)
+		Gui.F_WO..Caption(V.Local.sTitle)
+		Gui.F_WO..Show
+	F.Intrinsic.Control.Else
+		F.Intrinsic.UI.Msgbox("You must select an Order Number.")
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_3868_Launch_Billing.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(F_wo_unload)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.Main.End
+
+Program.Sub.gsfgWO_CommandClick.Start
+F.Intrinsic.Control.SetErrorHandler("gsfg0_CommandClick_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sWO.Declare(String)
+V.Local.sSuf.Declare(String)
+V.Local.sParams.Declare(String)
+
+'If open button clicked, opening WO Screen
+Gui.F_WO.gsfgWO.GetTextMatrix(0,V.Args.Key,V.Local.sWO)
+Gui.F_WO.gsfgWO.GetTextMatrix(1,V.Args.Key,V.Local.sSuf)
+F.Intrinsic.String.Build("7!*!{0}!*!{1}!*!A",V.Local.sWO,V.Local.sSuf,V.Local.sParams)
+F.Global.General.CallWrapperAsync(450000,V.Local.sParams)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("gsfg0_CommandClick_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_3868_Launch_Billing.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(F_wo_unload)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.gsfgWO_CommandClick.End
+
+Program.Sub.BuildStyle.Start
+F.Intrinsic.Control.SetErrorHandler("BuildStyle_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.iC.Declare(Long)
+
+Gui.F_WO.gsfgWO.Cols(6)
+Gui.F_WO.gsfgWO.Rows(2)
+Gui.F_WO.gsfgWO.FixedRows(1)
+Gui.F_WO.gsfgWO.SetColumnPercentages(".15:.1:.25:.2:.15:.15")
+
+'Initialize Header
+Gui.F_WO.gsfgWO.TextMatrix(0,0,"Job")
+Gui.F_WO.gsfgWO.TextMatrix(1,0,"Suffix")
+Gui.F_WO.gsfgWO.TextMatrix(2,0,"Part")
+Gui.F_WO.gsfgWO.TextMatrix(3,0,"Sales Order")
+Gui.F_WO.gsfgWO.TextMatrix(4,0,"Line Num")
+Gui.F_WO.gsfgWO.TextMatrix(5,0,"View")
+
+'Style 1: Header
+F.Intrinsic.Control.For(V.Local.iC,0,5,1)
+	Gui.F_WO.gsfgWO.BuildStyle(1,V.Local.iC,"Fontstyle","Bold",True)
+	Gui.F_WO.gsfgWO.BuildStyle(1,V.Local.iC,"Format","Alignment",4)
+	Gui.F_WO.gsfgWO.BuildStyle(1,V.Local.iC,"Type","Locked",True)
+F.Intrinsic.Control.Next(V.Local.iC)
+
+Gui.F_WO.gsfgWO.ApplyStyle(0,1)
+
+'Style 2: Data
+F.Intrinsic.Control.For(V.Local.iC,0,4,1)
+	Gui.F_WO.gsfgWO.BuildStyle(2,V.Local.iC,"Format","Alignment",2)
+	Gui.F_WO.gsfgWO.BuildStyle(2,V.Local.iC,"Type","Locked",True)
+F.Intrinsic.Control.Next(v.Local.iC)
+
+Gui.F_WO.gsfgWO.BuildStyle(2,5,"Fontstyle","Bold",True)
+Gui.F_WO.gsfgWO.BuildStyle(2,5,"Format","Alignment",4)
+Gui.F_WO.gsfgWO.BuildStyle(2,5,"Type","Command","Open")
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("BuildStyle_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_3868_Launch_Billing.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(F_wo_unload)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.BuildStyle.End
+
+Program.Sub.LoadGrid.Start
+F.Intrinsic.Control.SetErrorHandler("LoadGrid_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sSQL.Declare(String)
+V.Local.sSalesOrder.Declare(String)
+V.Local.iRows.Declare(String)
+
+'Querying for Work Orders associated with Sales Order, and populating Flex Grid
+F.Intrinsic.String.LPad(V.Passed.000003,"0",7,V.Local.sSalesOrder)
+F.Intrinsic.String.Build("SELECT JOB,SUFFIX,PART,SALES_ORDER,SALES_ORDER_LINE FROM V_JOB_HEADER WHERE SALES_ORDER = '{0}'",V.Local.sSalesOrder,V.Local.sSQL)
+F.ODBC.Connection!con.OpenLocalRecordsetRO("rst",V.Local.sSQL)
+
+F.Intrinsic.Control.If(V.ODBC.con!rst.EOF,<>,True)
+	Gui.F_WO.gsfgWO.LoadRecordset("con!rst",2)
+	F.ODBC.con!rst.Close
+	'Removing extra row in flexgrid
+	'Unless Runtime 2.0 is adjusted in some way to account for the fact that it doesn't generate an extra row, this may need to be removed whenever the customers go to Runtime 2.0
+	V.Local.iRows.Set(V.Screen.F_WO!gsfgWO.Rows)
+	F.Intrinsic.Math.Sub(V.Local.iRows,1,V.Local.iRows)
+	Gui.F_WO.gsfgWO.Rows(V.Local.iRows)
+F.Intrinsic.Control.Else
+	F.ODBC.con!rst.Close
+	F.Intrinsic.UI.Msgbox("There are no Work Orders for this Sales Order.","WO Not Found")
+	F.Intrinsic.Control.CallSub(F_wo_unload)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("LoadGrid_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_3868_Launch_Billing.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(F_wo_unload)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.LoadGrid.End
+
+Program.Sub.F_WO_Unload.Start
+F.Intrinsic.Control.SetErrorHandler("F_WO_Unload_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+F.ODBC.Connection!con.Close
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("F_WO_Unload_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_3868_Launch_Billing.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.F_WO_Unload.End
+
+Program.Sub.Comments.Start
+${$0$}$GCG_7001-0_Launch_Billing$}$BCC$}$9/2/2015 9:40:09 AM
+Program.Sub.Comments.End
+
